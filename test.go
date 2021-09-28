@@ -85,5 +85,17 @@ func getJenkinsPipelineData() {
 	json.Unmarshal(body, &pipelineData)
 	// fmt.Printf("API Response as struct %+v\n", pipelineData)
 
-	fmt.Println(pipelineData[0].Stages[0].Name)
+	for _, execution := range pipelineData {
+		pipelineName := "Test Pipeline"
+		order := 1
+		for _, stage := range execution.Stages {
+			escapedStageName := strings.ReplaceAll(stage.Name, " ", "\\ ")
+			escapedPipelineName := strings.ReplaceAll(pipelineName, " ", "\\ ")
+			// fmt.Printf("pipelineData,pipeline=%s,executionId=%s,stage=%s duration=%di %d\n", escapedPipelineName, execution.ID, escapedStageName, stage.DurationMillis, time.Now().Unix())
+			fmt.Printf("pipelineData,pipeline=%s,executionId=%s,stage=%s,order=%d duration=%di\n", escapedPipelineName, execution.ID, escapedStageName, order, stage.DurationMillis)
+			order = order + 1
+		}
+	}
+
+	// fmt.Println(pipelineData[0].Stages[0].Name)
 }
