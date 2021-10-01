@@ -173,6 +173,7 @@ func existingPipelineInfo(pipelineName string, executionID string) bool {
 
 func initConfig() {
 	viper.AddConfigPath(".")
+	viper.AddConfigPath("$HOME/.telegraf")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.ReadInConfig()
