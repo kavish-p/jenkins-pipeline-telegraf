@@ -1,0 +1,11 @@
+influxDBBaseURL: http://10.168.0.69:8086
+influxDBToken: YjvGujgJCGT2O_JxMkzd59CYrQzdMJMM3YaTyjZG1xPzFnsvyzNIzX1A89nx-NO4xqDatl3fWw46jb2NuaY4bQ==
+influxDBOrg: M9
+influxDBBucket: jenkins-pipeline
+jenkinsBaseURL: http://10.168.0.60:8080
+jenkinsUser: admin
+jenkinsToken: 11ed270f88640f859c121f4480c6517781
+pipelines:
+  - 1-Deploy to Dev
+  - 2-kavish-pipeline-k8s
+  - 10 - Deploy Microservice to Dev

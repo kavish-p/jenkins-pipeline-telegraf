@@ -12,26 +12,36 @@ import (
 	"strings"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/spf13/viper"
 )
 
 func main() {
-	pipeline := "1-Deploy to Dev"
-	getJenkinsPipelineData(pipeline)
+	initConfig()
+
+	pipelines := viper.GetStringSlice("pipelines")
+	for _, pipeline := range pipelines {
+		getJenkinsPipelineData(pipeline)
+	}
 }
 
 // Gets the existing pipelines and their build IDs currently in InfluxDB
 // This is used in getJenkinsPipelineData to ensure that existing records are not inserted again
 func getInfluxDBExistingBuilds() []ExistingPipeline {
+	influxDBBaseURL := viper.Get("influxDBBaseURL").(string)
+	influxDBToken := viper.Get("influxDBToken").(string)
+	influxDBOrg := viper.Get("influxDBOrg").(string)
+	influxDBBucket := viper.Get("influxDBBucket").(string)
+
 	var existingPipelines []ExistingPipeline
 
-	client := influxdb2.NewClient("http://10.168.0.69:8086", "YjvGujgJCGT2O_JxMkzd59CYrQzdMJMM3YaTyjZG1xPzFnsvyzNIzX1A89nx-NO4xqDatl3fWw46jb2NuaY4bQ==")
-	queryAPI := client.QueryAPI("M9")
+	client := influxdb2.NewClient(influxDBBaseURL, influxDBToken)
+	queryAPI := client.QueryAPI(influxDBOrg)
 
 	result, err := queryAPI.Query(context.Background(), `
 		import "influxdata/influxdb/schema"
 
 		schema.measurementTagValues(
-		bucket: "jenkins-pipeline",
+		bucket: "`+influxDBBucket+`",
 		measurement: "pipelineData",
 		tag: "pipeline"
 		)
@@ -50,7 +60,7 @@ func getInfluxDBExistingBuilds() []ExistingPipeline {
 
 	for i, pipeline := range existingPipelines {
 		builds_result, build_err := queryAPI.Query(context.Background(), `
-			from(bucket: "jenkins-pipeline")
+			from(bucket: "`+influxDBBucket+`")
 				|> range(start: 2021-09-24, stop: now())
 				|> filter(fn: (r) => r._measurement == "pipelineData")
 				|> filter(fn: (r) => r.pipeline == "`+pipeline.PipelineName+`")
@@ -76,11 +86,15 @@ func getInfluxDBExistingBuilds() []ExistingPipeline {
 }
 
 func getJenkinsPipelineData(pipeline string) {
+	jenkinsBaseURL := viper.Get("jenkinsBaseURL").(string)
+	jenkinsUser := viper.Get("jenkinsUser").(string)
+	jenkinsToken := viper.Get("jenkinsToken").(string)
+
 	method := "GET"
-	url := "http://10.168.0.60:8080/job/" + pipeline + "/wfapi/runs?fullStages=true"
+	url := jenkinsBaseURL + "/job/" + pipeline + "/wfapi/runs?fullStages=true"
 	payload := strings.NewReader(``)
 
-	plainCredentials := "admin" + ":" + "11ed270f88640f859c121f4480c6517781"
+	plainCredentials := jenkinsUser + ":" + jenkinsToken
 	base64Credentials := base64.StdEncoding.EncodeToString([]byte(plainCredentials))
 
 	client := &http.Client{}
@@ -155,4 +169,11 @@ func existingPipelineInfo(pipelineName string, executionID string) bool {
 		}
 	}
 	return existing
+}
+
+func initConfig() {
+	viper.AddConfigPath(".")
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.ReadInConfig()
 }
