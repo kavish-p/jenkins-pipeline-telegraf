@@ -36,3 +36,8 @@ type Stages struct {
 type Changesets struct {
 	Href string `json:"href"`
 }
+
+type ExistingPipeline struct {
+	PipelineName string
+	BuildIDs     []int
+}
